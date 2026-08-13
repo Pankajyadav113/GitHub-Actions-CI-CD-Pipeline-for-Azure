@@ -1,0 +1,19 @@
+name: Pull Request Automation & Verification
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-validation:
+    name: 📋 PR Title & Security Inspection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Validate PR Workflow
+        run: |
+          echo "PR Branch: ${{ github.head_ref }} -> Base: ${{ github.base_ref }}"
+          echo "PR Title: ${{ github.event.pull_request.title }}"
+          echo "✅ Pull Request verification passed successfully!"

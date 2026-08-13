@@ -1,0 +1,6 @@
+location        = "eastus"
+environment     = "prod"
+app_name        = "azreactcicd"
+container_image = "acrazreactcicdprod.azurecr.io/azure-react-cicd:v1.0.0"
+cpu             = 0.5
+memory          = "1.0Gi"
