@@ -7,293 +7,463 @@ import {
   Box, 
   Cloud, 
   Terminal, 
-  Cpu, 
   GitBranch, 
   Layers, 
   RotateCcw,
-  Zap,
-  Server
+  Cpu,
+  Server,
+  FileCode,
+  Lock,
+  Copy,
+  Check
 } from 'lucide-react';
 
-const INITIAL_STEPS = [
+const WORKFLOW_JOBS = [
   {
-    id: 1,
-    title: 'Checkout Repository',
-    action: 'actions/checkout@v4',
-    desc: 'Downloads repository source code into the GitHub Actions runner.',
-    status: 'passed'
+    id: 'lint-and-test',
+    name: '🧪 Quality Assurance & Unit Tests',
+    runner: 'ubuntu-latest',
+    duration: '14s',
+    status: 'passed',
+    steps: [
+      { name: 'Stage 1 — Checkout Repository', cmd: 'actions/checkout@v4', status: 'passed' },
+      { name: 'Stage 2 — Setup Node.js v20', cmd: 'actions/setup-node@v4 (node 20)', status: 'passed' },
+      { name: 'Stage 3 — Install Dependencies', cmd: 'npm ci', status: 'passed' },
+      { name: 'Stage 4 — Run ESLint Code Quality', cmd: 'npm run lint', status: 'passed' },
+      { name: 'Stage 5 — Run Vitest Unit Tests', cmd: 'npm test', status: 'passed' },
+      { name: 'Stage 6 — Compile Vite SPA Bundle', cmd: 'npm run build', status: 'passed' }
+    ],
+    logs: [
+      { time: '00:01', type: 'info', text: 'Initializing GitHub Actions runner (ubuntu-22.04 LTS)...' },
+      { time: '00:03', type: 'info', text: 'actions/setup-node@v4: Configuring Node.js version 20.19.0...' },
+      { time: '00:06', type: 'info', text: 'Executing npm ci --prefer-offline...' },
+      { time: '00:08', type: 'success', text: 'Added 338 packages in 2.1s. Zero audit vulnerabilities found.' },
+      { time: '00:10', type: 'info', text: 'Running ESLint flat config inspection on src/ and tests/...' },
+      { time: '00:11', type: 'success', text: 'ESLint passed cleanly with 0 errors and 0 warnings.' },
+      { time: '00:12', type: 'info', text: 'Executing Vitest unit test runner (jsdom environment)...' },
+      { time: '00:13', type: 'success', text: '✓ tests/App.test.jsx (3 passed assertions in 84ms)' },
+      { time: '00:14', type: 'success', text: 'Vite SPA production build generated in dist/ (1.73s).' }
+    ]
   },
   {
-    id: 2,
-    title: 'Setup Node.js Environment',
-    action: 'actions/setup-node@v4 (v20)',
-    desc: 'Configures Node.js 20 runtime with npm dependency caching.',
-    status: 'passed'
+    id: 'terraform-validate',
+    name: '🏗️ Terraform IaC Validation',
+    runner: 'ubuntu-latest',
+    duration: '8s',
+    status: 'passed',
+    steps: [
+      { name: 'Stage 1 — Checkout Repository', cmd: 'actions/checkout@v4', status: 'passed' },
+      { name: 'Stage 2 — Setup Terraform v1.5+', cmd: 'hashicorp/setup-terraform@v3', status: 'passed' },
+      { name: 'Stage 3 — Check Formatting', cmd: 'terraform fmt -check -diff', status: 'passed' },
+      { name: 'Stage 4 — Initialize Modules', cmd: 'terraform init -backend=false', status: 'passed' },
+      { name: 'Stage 5 — Validate Syntax', cmd: 'terraform validate', status: 'passed' }
+    ],
+    logs: [
+      { time: '00:01', type: 'info', text: 'Setting up HashiCorp Terraform CLI v1.5.7...' },
+      { time: '00:03', type: 'info', text: 'Running terraform fmt -check -recursive...' },
+      { time: '00:04', type: 'success', text: 'All .tf files formatted correctly.' },
+      { time: '00:06', type: 'info', text: 'Initializing modules (resource_group, container_registry, log_analytics, container_app)...' },
+      { time: '00:07', type: 'success', text: 'Installed hashicorp/azurerm v3.100.0 provider.' },
+      { time: '00:08', type: 'success', text: 'Success! The Terraform configuration is valid.' }
+    ]
   },
   {
-    id: 3,
-    title: 'Install Dependencies',
-    action: 'npm ci',
-    desc: 'Installs exact production & dev dependencies from package-lock.json.',
-    status: 'passed'
+    id: 'security-scan',
+    name: '🛡️ DevSecOps & Security Vulnerability Scan',
+    runner: 'ubuntu-latest',
+    duration: '11s',
+    status: 'passed',
+    steps: [
+      { name: 'Stage 1 — Checkout Repository', cmd: 'actions/checkout@v4', status: 'passed' },
+      { name: 'Stage 2 — Hadolint Linter', cmd: 'hadolint/hadolint-action@v3.1.0', status: 'passed' },
+      { name: 'Stage 3 — Trivy Repository Audit', cmd: 'aquasecurity/trivy-action@master', status: 'passed' },
+      { name: 'Stage 4 — npm Audit Scan', cmd: 'npm audit --audit-level=high', status: 'passed' }
+    ],
+    logs: [
+      { time: '00:01', type: 'info', text: 'Running Hadolint Dockerfile security baseline checks...' },
+      { time: '00:03', type: 'success', text: 'Hadolint score: 100% compliant. Non-root USER nginx verified.' },
+      { time: '00:06', type: 'info', text: 'Scanning repository filesystem with Aqua Security Trivy...' },
+      { time: '00:09', type: 'success', text: 'Trivy Scan Result: 0 CRITICAL, 0 HIGH vulnerabilities found.' },
+      { time: '00:11', type: 'success', text: 'npm audit security check completed clean.' }
+    ]
   },
   {
-    id: 4,
-    title: 'Code Quality Validation',
-    action: 'npm run lint',
-    desc: 'Executes ESLint flat config rules for JSX syntax and code cleanliness.',
-    status: 'passed'
-  },
-  {
-    id: 5,
-    title: 'Automated Unit Tests',
-    action: 'npm test',
-    desc: 'Runs Vitest test suite with jsdom environment assertions.',
-    status: 'passed'
-  },
-  {
-    id: 6,
-    title: 'React Production Build',
-    action: 'npm run build',
-    desc: 'Compiles optimized SPA static bundle into dist/ distribution directory.',
-    status: 'passed'
-  },
-  {
-    id: 7,
-    title: 'Build Docker Container',
-    action: 'docker build -t azure-react-cicd .',
-    desc: 'Compiles lightweight multi-stage Docker image served via Nginx Alpine.',
-    status: 'passed'
-  },
-  {
-    id: 8,
-    title: 'Azure-Ready Verification',
-    action: 'CI Validation Completed',
-    desc: 'Container validation verified locally without incurring Azure infrastructure costs.',
-    status: 'passed'
+    id: 'docker-build-check',
+    name: '🐳 Docker Multi-Stage Buildx',
+    runner: 'ubuntu-latest',
+    duration: '16s',
+    status: 'passed',
+    steps: [
+      { name: 'Stage 1 — Checkout Repository', cmd: 'actions/checkout@v4', status: 'passed' },
+      { name: 'Stage 2 — Setup Docker Buildx', cmd: 'docker/setup-buildx-action@v3', status: 'passed' },
+      { name: 'Stage 3 — Multi-Stage Build', cmd: 'docker build -t azure-react-cicd .', status: 'passed' },
+      { name: 'Stage 4 — Health Probe Check', cmd: 'HEALTHCHECK probe /health', status: 'passed' }
+    ],
+    logs: [
+      { time: '00:01', type: 'info', text: 'Initializing Docker Buildx builder instance...' },
+      { time: '00:05', type: 'info', text: 'Stage 1 (build): Compiling SPA in node:20-alpine...' },
+      { time: '00:11', type: 'info', text: 'Stage 2 (runtime): Packaging static dist in nginx:alpine...' },
+      { time: '00:14', type: 'info', text: 'Configuring HEALTHCHECK probe for http://localhost:80/health...' },
+      { time: '00:16', type: 'success', text: 'Successfully tagged image azure-react-cicd:latest (24.2 MB).' }
+    ]
   }
 ];
 
 export default function App() {
-  const [steps, setSteps] = useState(INITIAL_STEPS);
-  const [activeTab, setActiveTab] = useState('ci-runner');
-  const [simulationState, setSimulationState] = useState('all-passed');
+  const [jobs, setJobs] = useState(WORKFLOW_JOBS);
+  const [selectedJobId, setSelectedJobId] = useState('lint-and-test');
+  const [activeTab, setActiveTab] = useState('dag');
+  const [simState, setSimState] = useState('passing');
+  const [copied, setCopied] = useState(false);
 
-  const handleSimulateLintFailure = () => {
-    setSimulationState('lint-failed');
-    setSteps(prev => prev.map(step => {
-      if (step.id === 4) return { ...step, status: 'failed', desc: '❌ ESLint error: Unused variable detected in App.jsx' };
-      if (step.id > 4) return { ...step, status: 'skipped', desc: 'Skipped due to upstream pipeline failure' };
-      return step;
-    }));
+  const selectedJob = jobs.find(j => j.id === selectedJobId) || jobs[0];
+
+  const handleSimulateError = (type) => {
+    setSimState(type);
+    if (type === 'eslint') {
+      setJobs(prev => prev.map(job => {
+        if (job.id === 'lint-and-test') {
+          return {
+            ...job,
+            status: 'failed',
+            steps: job.steps.map((s, i) => i === 3 ? { ...s, status: 'failed' } : i > 3 ? { ...s, status: 'skipped' } : s),
+            logs: [
+              ...job.logs.slice(0, 5),
+              { time: '00:11', type: 'error', text: '❌ ESLint error: "simulationState" is assigned a value but never used (no-unused-vars)' },
+              { time: '00:12', type: 'error', text: 'Process completed with exit code 1. Pipeline execution halted.' }
+            ]
+          };
+        }
+        if (job.id === 'docker-build-check') {
+          return { ...job, status: 'skipped' };
+        }
+        return job;
+      }));
+    } else if (type === 'terraform') {
+      setJobs(prev => prev.map(job => {
+        if (job.id === 'terraform-validate') {
+          return {
+            ...job,
+            status: 'failed',
+            steps: job.steps.map((s, i) => i === 4 ? { ...s, status: 'failed' } : s),
+            logs: [
+              ...job.logs.slice(0, 4),
+              { time: '00:07', type: 'error', text: '❌ Error: Reference to undeclared resource "azurerm_resource_group.wrong_name"' },
+              { time: '00:08', type: 'error', text: 'Terraform validation failed with code 1.' }
+            ]
+          };
+        }
+        if (job.id === 'docker-build-check') {
+          return { ...job, status: 'skipped' };
+        }
+        return job;
+      }));
+    }
   };
 
-  const handleSimulateTestFailure = () => {
-    setSimulationState('test-failed');
-    setSteps(prev => prev.map(step => {
-      if (step.id === 5) return { ...step, status: 'failed', desc: '❌ Vitest error: Expected "Azure CI/CD Dashboard" to be present' };
-      if (step.id > 5) return { ...step, status: 'skipped', desc: 'Skipped due to upstream pipeline failure' };
-      return { ...step, status: 'passed' };
-    }));
+  const handleReset = () => {
+    setSimState('passing');
+    setJobs(WORKFLOW_JOBS);
   };
 
-  const handleResetSimulation = () => {
-    setSimulationState('all-passed');
-    setSteps(INITIAL_STEPS);
+  const handleCopyLogs = () => {
+    const text = selectedJob.logs.map(l => `[${l.time}] [${l.type.toUpperCase()}] ${l.text}`).join('\n');
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
-  const overallStatus = steps.some(s => s.status === 'failed') ? 'FAILED' : 'PASSING';
+  const isWorkflowHealthy = jobs.every(j => j.status === 'passed');
 
   return (
-    <div className="dashboard-container">
-      {/* Top Header */}
-      <header className="header">
-        <div className="header-title">
-          <div className="azure-logo-badge">
-            <Cloud size={28} color="#ffffff" />
+    <div className="command-center-container">
+      {/* Top Navbar */}
+      <header className="navbar">
+        <div className="brand-section">
+          <div className="brand-icon">
+            <Cloud size={24} color="#ffffff" />
           </div>
-          <div>
-            <h1>Azure React CI/CD Pipeline Dashboard</h1>
-            <p className="header-subtitle">
-              Automated GitHub Actions workflow & Multi-stage Docker containerization
+          <div className="brand-title">
+            <h1>GitHub Actions & Azure DevOps Command Center</h1>
+            <p className="brand-subtitle">
+              Workflow: <span style={{ color: '#58a6ff' }}>.github/workflows/azure-ci.yml</span> | Commit: <span style={{ color: '#238636' }}>44fd225</span>
             </p>
           </div>
         </div>
 
-        <div className="badge-group">
-          <div className={`status-chip ${overallStatus === 'PASSING' ? 'success' : 'failed'}`}>
-            <span className="pulse-dot"></span>
-            CI Pipeline: <strong>{overallStatus}</strong>
+        <div className="header-status-group">
+          <div className={`status-badge ${isWorkflowHealthy ? 'healthy' : 'failed'}`}>
+            <span className="pulse-circle"></span>
+            Workflow Status: <strong>{isWorkflowHealthy ? 'PASSING' : 'FAILED'}</strong>
           </div>
-          <div className="status-chip">
-            <Cpu size={14} /> Node v20
+          <div className="status-badge">
+            <GitBranch size={12} /> main
           </div>
-          <div className="status-chip">
-            <Box size={14} /> Docker Multi-Stage
+          <div className="status-badge">
+            <Cpu size={12} /> ubuntu-22.04 LTS
           </div>
-          <div className="status-chip">
-            <GitBranch size={14} /> main
+          <div className="status-badge">
+            <Lock size={12} /> DevSecOps Hardened
           </div>
         </div>
       </header>
 
-      {/* Metrics Bar */}
-      <section className="metrics-grid">
-        <div className="metric-card">
-          <span className="metric-label">Pipeline Duration</span>
-          <span className="metric-value">38s</span>
-          <span className="metric-sub"><Zap size={14} /> Optimized npm cache</span>
+      {/* Failure Simulator Bar */}
+      <div className="control-bar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+          <Terminal size={16} color="#00a4ef" />
+          <span><strong>CI/CD Failure Injector:</strong> Test workflow error isolation</span>
+          {simState !== 'passing' && (
+            <span className="status-badge failed" style={{ marginLeft: '10px' }}>
+              Active Error: {simState.toUpperCase()}
+            </span>
+          )}
         </div>
-        <div className="metric-card">
-          <span className="metric-label">Unit Test Status</span>
-          <span className="metric-value">100%</span>
-          <span className="metric-sub"><ShieldCheck size={14} /> Vitest + JSDOM</span>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn-danger" onClick={() => handleSimulateError('eslint')}>
+            Inject ESLint Error
+          </button>
+          <button className="btn-danger" onClick={() => handleSimulateError('terraform')}>
+            Inject Terraform Error
+          </button>
+          <button className="btn-success" onClick={handleReset}>
+            <RotateCcw size={12} style={{ marginRight: '4px' }} /> Reset Workflow
+          </button>
         </div>
-        <div className="metric-card">
-          <span className="metric-label">Docker Image Size</span>
-          <span className="metric-value">24.2 MB</span>
-          <span className="metric-sub"><Server size={14} /> Nginx Alpine base</span>
-        </div>
-        <div className="metric-card">
-          <span className="metric-label">Azure Cost Impact</span>
-          <span className="metric-value">$0.00</span>
-          <span className="metric-sub"><CheckCircle2 size={14} /> GitHub Runner execution</span>
-        </div>
-      </section>
+      </div>
 
-      {/* Simulation Controls */}
-      <section className="glass-panel" style={{ padding: '1rem 1.5rem', marginBottom: '2rem' }}>
-        <div className="simulation-bar">
-          <div className="simulation-info">
-            <Terminal size={18} color="#00a4ef" />
-            <span>
-              <strong>CI/CD Failure Simulator:</strong> Test how GitHub Actions reacts to broken code 
-              {simulationState !== 'all-passed' && (
-                <span className="step-cmd" style={{ marginLeft: '10px', color: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.15)' }}>
-                  Active Mode: {simulationState}
-                </span>
-              )}
+      {/* Navigation Tabs */}
+      <nav className="nav-tabs">
+        <button 
+          className={`tab-link ${activeTab === 'dag' ? 'active' : ''}`}
+          onClick={() => setActiveTab('dag')}
+        >
+          <Layers size={16} /> Multi-Job Pipeline DAG Graph
+        </button>
+        <button 
+          className={`tab-link ${activeTab === 'logs' ? 'active' : ''}`}
+          onClick={() => setActiveTab('logs')}
+        >
+          <Terminal size={16} /> Live Terminal Logs
+        </button>
+        <button 
+          className={`tab-link ${activeTab === 'topology' ? 'active' : ''}`}
+          onClick={() => setActiveTab('topology')}
+        >
+          <Cloud size={16} /> Terraform Infrastructure Topology
+        </button>
+        <button 
+          className={`tab-link ${activeTab === 'security' ? 'active' : ''}`}
+          onClick={() => setActiveTab('security')}
+        >
+          <ShieldCheck size={16} /> DevSecOps Audit (Trivy & Hadolint)
+        </button>
+      </nav>
+
+      {/* TAB 1: Multi-Job Pipeline DAG Visualizer */}
+      {activeTab === 'dag' && (
+        <section className="card-panel">
+          <div className="card-title">
+            <span>Workflow DAG Grid (4 Parallel & Sequential Jobs)</span>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              Click any job card to inspect step execution & terminal logs
             </span>
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button className="sim-btn" onClick={handleSimulateLintFailure}>
-              Simulate Lint Error
-            </button>
-            <button className="sim-btn" onClick={handleSimulateTestFailure}>
-              Simulate Test Error
-            </button>
-            <button className="reset-btn" onClick={handleResetSimulation}>
-              <RotateCcw size={14} style={{ marginRight: '4px' }} /> Reset Pipeline
-            </button>
-          </div>
-        </div>
-      </section>
 
-      {/* Pipeline Steps Grid */}
-      <section className="glass-panel">
-        <div className="panel-header">
-          <div className="panel-title">
-            <Layers size={22} />
-            <span>Automated CI/CD Pipeline Stages</span>
-          </div>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Trigger: push / pull_request [main]
-          </span>
-        </div>
+          <div className="dag-container">
+            {jobs.map((job) => (
+              <div 
+                key={job.id} 
+                className={`dag-job-card ${job.id === selectedJobId ? 'active-selected' : ''}`}
+                onClick={() => {
+                  setSelectedJobId(job.id);
+                  setActiveTab('logs');
+                }}
+              >
+                <div className="job-card-header">
+                  <span className="job-name">
+                    {job.name}
+                  </span>
+                  {job.status === 'passed' && <CheckCircle2 size={16} color="#3fb950" />}
+                  {job.status === 'failed' && <XCircle size={16} color="#f85149" />}
+                  {job.status === 'skipped' && <Play size={16} color="#6e7681" />}
+                </div>
 
-        <div className="pipeline-steps-grid">
-          {steps.map((step) => (
-            <div key={step.id} className={`step-card ${step.status}`}>
-              <div className="step-header">
-                <span className="step-number">Stage {step.id}</span>
-                {step.status === 'passed' && <CheckCircle2 size={18} color="#10b981" />}
-                {step.status === 'failed' && <XCircle size={18} color="#ef4444" />}
-                {step.status === 'skipped' && <Play size={18} color="#64748b" />}
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                  Runner: <code style={{ color: '#58a6ff' }}>{job.runner}</code> ({job.duration})
+                </div>
+
+                <div className="step-list">
+                  {job.steps.map((step, idx) => (
+                    <div key={idx} className={`step-item ${step.status}`}>
+                      <span>{step.name}</span>
+                      {step.status === 'passed' && <CheckCircle2 size={12} />}
+                      {step.status === 'failed' && <XCircle size={12} />}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <h3 className="step-title">{step.title}</h3>
-              <div className="step-cmd">{step.action}</div>
-              <p className="step-desc">{step.desc}</p>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* TAB 2: ANSI Live Terminal Log Viewer */}
+      {activeTab === 'logs' && (
+        <section className="card-panel">
+          <div className="card-title">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Terminal size={18} color="#58a6ff" />
+              <span>Job Terminal Logs: <strong style={{ color: '#58a6ff' }}>{selectedJob.name}</strong></span>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Conceptual Architecture Explorer */}
-      <section className="glass-panel">
-        <div className="panel-header">
-          <div className="panel-title">
-            <Cloud size={22} />
-            <span>Architecture & Azure Cloud Strategy</span>
+            <button className="btn-success" onClick={handleCopyLogs}>
+              {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? 'Copied!' : 'Copy Logs'}
+            </button>
           </div>
-        </div>
 
-        <div className="architecture-tabs">
-          <button 
-            className={`tab-btn ${activeTab === 'ci-runner' ? 'active' : ''}`}
-            onClick={() => setActiveTab('ci-runner')}
-          >
-            <Terminal size={16} /> GitHub Runner Execution (Active)
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'azure-target' ? 'active' : ''}`}
-            onClick={() => setActiveTab('azure-target')}
-          >
-            <Cloud size={16} /> Production Azure Target Architecture
-          </button>
-        </div>
+          <div className="terminal-window">
+            <div className="terminal-header">
+              <div className="terminal-dots">
+                <span className="dot red"></span>
+                <span className="dot yellow"></span>
+                <span className="dot green"></span>
+              </div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                bash - runner@github-actions-ubuntu-22.04
+              </span>
+            </div>
 
-        {activeTab === 'ci-runner' ? (
-          <div className="architecture-box">
-{`[Developer] ---> (git push / Pull Request) ---> [GitHub Repository]
-                                                         |
-                                                         v
-                                                [GitHub Actions Runner]
-                                                         |
-  +------------------------------------------------------+------------------------------------------------------+
-  |                                                                                                             |
-  v                                                                                                             v
-[Node.js 20 Environment]                                                                       [Docker Build Engine]
-  |-- npm ci                                                                                     |-- Multi-stage build
-  |-- ESLint Checks                                                                              |-- Node 20 Compile -> dist/
-  |-- Vitest Unit Tests                                                                          |-- Nginx Alpine Serve
-  |-- React Vite Bundle                                                                          |-- Image Validation
-  v                                                                                              v
-  +------------------------------------------------------+------------------------------------------------------+
-                                                         |
-                                                         v
-                                              [✓ CI Validation Passed]
-                                             (Zero Paid Infrastructure)`}
+            <div className="terminal-body">
+              {selectedJob.logs.map((log, idx) => (
+                <div key={idx} className="log-line">
+                  <span className="log-time">[{log.time}]</span>
+                  <span className={`log-msg ${log.type}`}>{log.text}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        ) : (
-          <div className="architecture-box">
-{`[GitHub Actions Runner]
-       |
-       v
-[Docker Multi-Stage Build]
-       |
-       v
-[Azure Container Registry (ACR)]
-       |
-       +-----------------------------------+-----------------------------------+
-       |                                   |                                   |
-       v                                   v                                   v
-[Azure Container Apps]           [Azure App Service]             [Azure Kubernetes Service (AKS)]
-(Serverless Containers)          (Managed Web Apps)               (Microservice Orchestration)
-       |                                   |                                   |
-       +-----------------------------------+-----------------------------------+
-                                           |
-                                           v
-                                    [Azure Front Door / CDN]
-                                           |
-                                           v
-                                     [End Users]`}
+        </section>
+      )}
+
+      {/* TAB 3: Terraform Infrastructure Topology Map */}
+      {activeTab === 'topology' && (
+        <section className="card-panel">
+          <div className="card-title">
+            <span>Terraform Infrastructure Topology (Parent-Child Modules)</span>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              Source: <code style={{ color: '#58a6ff' }}>terraform/main.tf</code>
+            </span>
           </div>
-        )}
-      </section>
+
+          <div className="topology-grid">
+            <div className="node-card">
+              <span className="node-type">Child Module 1</span>
+              <span className="node-title">rg-azreactcicd-prod</span>
+              <span className="node-meta">Resource: azurerm_resource_group</span>
+              <span className="status-badge healthy" style={{ marginTop: '0.5rem' }}>Location: eastus</span>
+            </div>
+
+            <div className="node-card">
+              <span className="node-type">Child Module 2</span>
+              <span className="node-title">acrazreactcicdprod</span>
+              <span className="node-meta">Resource: azurerm_container_registry</span>
+              <span className="status-badge healthy" style={{ marginTop: '0.5rem' }}>SKU: Basic (Admin Enabled)</span>
+            </div>
+
+            <div className="node-card">
+              <span className="node-type">Child Module 3</span>
+              <span className="node-title">law-azreactcicd-prod</span>
+              <span className="node-meta">Resource: azurerm_log_analytics_workspace</span>
+              <span className="status-badge healthy" style={{ marginTop: '0.5rem' }}>Retention: 30 Days</span>
+            </div>
+
+            <div className="node-card">
+              <span className="node-type">Child Module 4</span>
+              <span className="node-title">cae-azreactcicd-prod</span>
+              <span className="node-meta">Resource: azurerm_container_app_environment</span>
+              <span className="status-badge healthy" style={{ marginTop: '0.5rem' }}>Logs: Connected LAW</span>
+            </div>
+
+            <div className="node-card" style={{ borderColor: 'var(--azure-blue)' }}>
+              <span className="node-type">Managed Container App</span>
+              <span className="node-title">ca-azreactcicd-prod</span>
+              <span className="node-meta">Probe: /health | Port 80</span>
+              <span className="status-badge healthy" style={{ marginTop: '0.5rem' }}>Ingress: External FQDN</span>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* TAB 4: DevSecOps Vulnerability Audit */}
+      {activeTab === 'security' && (
+        <section className="card-panel">
+          <div className="card-title">
+            <span>DevSecOps Vulnerability & Compliance Report</span>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              Automated scanners: Aqua Trivy + Hadolint + npm audit
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+            <div className="node-card">
+              <span className="node-type">Trivy Security</span>
+              <span style={{ fontSize: '1.4rem', fontWeight: '800', color: '#3fb950' }}>0 CVEs</span>
+              <span className="node-meta">0 Critical, 0 High Vulnerabilities</span>
+            </div>
+            <div className="node-card">
+              <span className="node-type">Hadolint Linter</span>
+              <span style={{ fontSize: '1.4rem', fontWeight: '800', color: '#58a6ff' }}>100% Pass</span>
+              <span className="node-meta">Non-root USER nginx compliance</span>
+            </div>
+            <div className="node-card">
+              <span className="node-type">Nginx Hardening</span>
+              <span style={{ fontSize: '1.4rem', fontWeight: '800', color: '#3fb950' }}>Active</span>
+              <span className="node-meta">X-Frame-Options, CSP, Gzip</span>
+            </div>
+          </div>
+
+          <table className="security-table">
+            <thead>
+              <tr>
+                <th>Scanner Tool</th>
+                <th>Target Object</th>
+                <th>Rule / CVE Severity</th>
+                <th>Audit Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Aqua Trivy</td>
+                <td>Filesystem & Dependencies</td>
+                <td>CRITICAL, HIGH</td>
+                <td><span className="status-badge healthy">✓ PASSED</span></td>
+              </tr>
+              <tr>
+                <td>Hadolint Action</td>
+                <td>Dockerfile</td>
+                <td>DL3006, DL3007 (Base Image Pinning)</td>
+                <td><span className="status-badge healthy">✓ PASSED</span></td>
+              </tr>
+              <tr>
+                <td>npm audit</td>
+                <td>package-lock.json</td>
+                <td>Audit-level high</td>
+                <td><span className="status-badge healthy">✓ PASSED</span></td>
+              </tr>
+              <tr>
+                <td>Nginx Security Probe</td>
+                <td>/health Endpoint</td>
+                <td>HTTP 200 JSON Probe</td>
+                <td><span className="status-badge healthy">✓ PASSED</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      )}
 
       {/* Footer */}
-      <footer className="footer">
-        Azure React CI/CD Pipeline | Designed for high-reliability DevOps automation with zero cloud infrastructure overhead.
+      <footer style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+        GitHub Actions & Azure DevOps Operations Center | Automated CI/CD Pipeline & Modular Infrastructure-as-Code.
       </footer>
     </div>
   );
