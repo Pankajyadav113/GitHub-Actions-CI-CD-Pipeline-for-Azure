@@ -1,8 +1,7 @@
 # Enterprise Azure React CI/CD Pipeline & Infrastructure-as-Code
 
 ![CI Status](https://img.shields.io/badge/CI-Passing-10b981?style=for-the-badge&logo=githubactions)
-![Terraform](https://img.shields.io/badge/IaC-Terraform_v1.5+-7B42BC?style=for-the-badge&logo=terraform)
-![Bicep](https://img.shields.io/badge/IaC-Azure_Bicep-0078d4?style=for-the-badge&logo=microsoftazure)
+![Terraform](https://img.shields.io/badge/IaC-Terraform_Modular-7B42BC?style=for-the-badge&logo=terraform)
 ![DevSecOps](https://img.shields.io/badge/Security-Trivy_%26_Hadolint-ef4444?style=for-the-badge&logo=aquasecurity)
 ![Docker](https://img.shields.io/badge/Docker-Multi--stage_Hardened-0078d4?style=for-the-badge&logo=docker)
 ![Cost](https://img.shields.io/badge/Cost-%240.00_CI-success?style=for-the-badge)
@@ -13,7 +12,7 @@
 
 This repository demonstrates a complete, production-grade **DevOps & Cloud Engineering Suite** for containerized applications targeting **Microsoft Azure**.
 
-Beyond web application continuous integration, this project provides a full **Infrastructure-as-Code (IaC)** foundation (**Terraform** & **Bicep**), automated **DevSecOps security scanning** (**Trivy** & **Hadolint**), production **Nginx security hardening**, container health probes (`/health`), and automated multi-job **GitHub Actions CI/CD workflows**.
+Beyond web application continuous integration, this project provides a full **Infrastructure-as-Code (IaC)** foundation with **Terraform Parent-Child Modules**, automated **DevSecOps security scanning** (**Trivy** & **Hadolint**), production **Nginx security hardening**, container health probes (`/health`), and automated multi-job **GitHub Actions CI/CD workflows**.
 
 All validation workflows run **100% cost-free** on GitHub-hosted runners (`ubuntu-latest`) without requiring paid cloud resources or secret management overhead.
 
@@ -70,7 +69,7 @@ All validation workflows run **100% cost-free** on GitHub-hosted runners (`ubunt
 
 | Domain | Engineering Tools & Frameworks |
 | :--- | :--- |
-| **Infrastructure-as-Code** | HashiCorp Terraform v1.5+, Azure Bicep, Azure CLI |
+| **Infrastructure-as-Code** | HashiCorp Terraform v1.5+ (Parent-Child Modules), Azure CLI |
 | **Cloud Services (Conceptual)** | Azure Container Registry (ACR), Azure Container Apps, Log Analytics |
 | **Containerization** | Docker Multi-stage, Docker Buildx, Nginx Alpine Hardened |
 | **CI/CD Automation** | GitHub Actions, YAML Workflows, GitHub Runners (`ubuntu-latest`) |
@@ -94,10 +93,6 @@ azure-react-github-actions-cicd/
 │   ├── ARCHITECTURE.md         # Deep-dive architecture & security baseline
 │   ├── AZURE_DEPLOYMENT_GUIDE.md # Step-by-step real Azure deployment guide
 │   └── TROUBLESHOOTING.md      # Incident troubleshooting runbook
-│
-├── infrastructure/
-│   └── bicep/
-│       └── main.bicep          # Native Azure Bicep IaC template
 │
 ├── scripts/
 │   ├── devops-setup.ps1        # PowerShell local validation script
@@ -207,31 +202,4 @@ docker build -t $ACR_NAME/azure-react-cicd:v1.0.0 ..
 docker push $ACR_NAME/azure-react-cicd:v1.0.0
 
 # 4. Update Container App Revision
-az containerapp update \
-  --name ca-azreactcicd-prod \
-  --resource-group rg-azreactcicd-prod \
-  --image $ACR_NAME/azure-react-cicd:v1.0.0
 ```
-
----
-
-## 10. DevOps Interview Explanation Script
-
-**Interviewer:** *"Can you walk me through your Azure DevOps & Infrastructure project?"*
-
-> **Response:**  
-> *"I designed an enterprise-grade CI/CD and Infrastructure-as-Code pipeline for a containerized React application targeting Microsoft Azure.
-> 
-> On the infrastructure side, I wrote Terraform and Azure Bicep modules to provision an Azure Container Registry, Log Analytics Workspace, and Azure Container Apps with ingress and health probes.
-> 
-> For CI/CD and DevSecOps, I implemented a multi-job GitHub Actions workflow that runs parallel jobs for ESLint code quality, Vitest unit testing, Terraform syntax validation (`terraform validate`), Hadolint Dockerfile linting, and Trivy security vulnerability scanning.
-> 
-> The application is containerized using a hardened multi-stage Dockerfile that executes under a non-root Nginx user with dynamic `/health` probes, served through Nginx security headers. All pipeline validation executes on GitHub-hosted runners to deliver a production-ready DevOps portfolio project with zero cloud infrastructure expense."*
-
----
-
-## 11. Portfolio Project Description
-
-> **Enterprise Azure CI/CD & Infrastructure-as-Code Pipeline**  
-> *Production-grade DevOps engineering repository featuring Terraform & Bicep IaC modules, multi-job GitHub Actions workflow pipelines, Trivy & Hadolint DevSecOps security scanning, hardened multi-stage Dockerization with Nginx health probes, and Azure Container Apps deployment architecture.*  
-> **Tech Stack**: Terraform, Azure Bicep, GitHub Actions, Docker, Nginx, Trivy, Hadolint, Vitest, ESLint, React, Node.js.
